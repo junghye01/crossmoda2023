@@ -43,41 +43,6 @@ def get_option_setter(dataset_name):
     dataset_class = find_dataset_using_name(dataset_name)
     return dataset_class.modify_commandline_options
 
-def custom_collate_fn(batch):
-    """
-    Custom collate function to handle varying sizes of tensors.
-    """
-    # Initialize a dictionary to hold the processed batch
-    batch_dict = {key: [] for key in batch[0].keys()}
-
-    # Collect and pad tensors to make sure all tensors in the batch have the same size
-    for sample in batch:
-        for key in sample:
-            batch_dict[key].append(sample[key])
-
-    # Pad the tensors if necessary to the maximum size in the batch
-    for key in batch_dict:
-        if isinstance(batch_dict[key][0], torch.Tensor):
-            # Determine max size along each dimension
-            max_size = tuple(max(s.shape[i] for s in batch_dict[key]) for i in range(len(batch_dict[key][0].shape)))
-            # Pad all tensors to the maximum size
-            padded_tensors = [pad_tensor(t, max_size) for t in batch_dict[key]]
-            # Stack them into a single tensor
-            batch_dict[key] = torch.stack(padded_tensors, dim=0)
-        else:
-            batch_dict[key] = batch_dict[key]  # if not tensor, keep as is (e.g., file paths)
-
-    return batch_dict
-
-def pad_tensor(tensor, max_size):
-    """
-    Pad a tensor to the desired size with zeros.
-    """
-    padded_tensor = torch.zeros(max_size, dtype=tensor.dtype)
-    slices = tuple(slice(0, dim) for dim in tensor.shape)
-    padded_tensor[slices] = tensor
-    return padded_tensor
-    
 
 def create_dataset(opt):
     """Create a dataset given the option.
@@ -112,8 +77,7 @@ class CustomDatasetDataLoader():
             batch_size=opt.batch_size,
             shuffle=not opt.serial_batches,
             num_workers=int(opt.num_threads),
-            drop_last=True,
-            collate_fn=custom_collate_fn
+            drop_last=True
         )
 
     def set_epoch(self, epoch):

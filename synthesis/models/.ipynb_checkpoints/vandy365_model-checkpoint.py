@@ -7,7 +7,7 @@ from . import networks
 from .patchnce import PatchNCELoss
 import util.util as util
 from .segnet import UNet
-import torch.nn.functional as F
+
 
 """##################################################################################
 
@@ -152,29 +152,7 @@ class Vandy365Model(BaseModel):
 
 
     def forward(self):
-        # resize or pad
-        print(f'real A size :{self.real_A.size()}, real B size:{self.real_B.size()}')
-        
-        if self.opt.nce_idt:
-            if self.real_A.size() != self.real_B.size():
-                # Determine target size to match the smaller size
-                target_size = (
-                    min(self.real_A.size(2), self.real_B.size(2)),  # Depth (D)
-                    min(self.real_A.size(3), self.real_B.size(3)),  # Height (H)
-                    min(self.real_A.size(4), self.real_B.size(4))   # Width (W)
-                )
-                # Resize both real_A and real_B to the same target size
-                self.real_A = F.interpolate(self.real_A, size=target_size, mode='trilinear', align_corners=False)
-                self.real_B = F.interpolate(self.real_B, size=target_size, mode='trilinear', align_corners=False)
-            
-            # Concatenate real_A and real_B if nce_idt is True
-            self.real = torch.cat((self.real_A, self.real_B), dim=0)
-        else:
-            # Otherwise, use only real_A
-            self.real = self.real_A
-        
-    
-        #self.real = torch.cat((self.real_A, self.real_B), dim=0) if self.opt.nce_idt else self.real_A
+        self.real = torch.cat((self.real_A, self.real_B), dim=0) if self.opt.nce_idt else self.real_A
         if self.opt.flip_equivariance:
             self.flipped_for_equivariance = self.opt.isTrain and (np.random.random() < 0.5)
             if self.flipped_for_equivariance:

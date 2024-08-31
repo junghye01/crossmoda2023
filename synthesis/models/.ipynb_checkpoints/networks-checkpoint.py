@@ -263,58 +263,7 @@ def get_filter(filt_size=3):
     filt = filt / torch.sum(filt)
     return filt
 
-class Downsample(nn.Module):
-    def __init__(self, channels, pad_type='reflect', filt_size=3, stride=2, pad_off=0, kernel_size=3):
-        super(Downsample, self).__init__()
-        self.filt_size = filt_size
-        self.kernel_size = kernel_size  # Define kernel size
-        self.pad_off = pad_off
-        self.pad_sizes = [
-            int(1. * (filt_size - 1) / 2), int(np.ceil(1. * (filt_size - 1) / 2)), 
-            int(1. * (filt_size - 1) / 2), int(np.ceil(1. * (filt_size - 1) / 2)), 
-            int(1. * (filt_size - 1) / 2), int(np.ceil(1. * (filt_size - 1) / 2))
-        ]
-        self.pad_sizes = [pad_size + pad_off for pad_size in self.pad_sizes]
-        self.stride = stride
-        self.off = int((self.stride - 1) / 2.)
-        self.channels = channels
-        filt = get_filter(filt_size=self.filt_size)
-        self.register_buffer('filt', filt[None, None, :, :, :].repeat((self.channels, 1, 1, 1, 1)))  # 2D -> 3D
-        self.pad_type = pad_type  # Store pad_type to change it dynamically
 
-    def forward(self, inp):
-        # Check if we can apply the specified padding
-        input_shape = inp.shape
-        can_use_reflect = all(input_shape[i] > self.pad_sizes[i - 2] * 2 for i in range(2, 5))  # Check depth, height, width
-
-        # Adjust padding type if input is too small for reflection
-        if not can_use_reflect and self.pad_type == 'reflect':
-            print(f"Input size too small for reflect padding. Switching to 'replicate' padding.")
-            pad_layer = nn.ReplicationPad3d(self.pad_sizes)
-        else:
-            # Use the original padding type
-            pad_layer = get_pad_layer(self.pad_type)(self.pad_sizes)
-
-        # Check if padded input size is still valid for convolution kernel
-        padded_inp = pad_layer(inp)
-        if any(padded_inp.size(i) < self.kernel_size for i in range(2, 5)):
-            # Adjust the kernel size or raise an informative error
-            raise ValueError(f"Padded input size too small for convolution kernel size {self.kernel_size}. Adjust input size, padding, or kernel size.")
-
-        if self.filt_size == 1:
-            if self.pad_off == 0:
-                return inp[:, :, ::self.stride, ::self.stride, ::self.stride]
-            else:
-                return pad_layer(inp)[:, :, ::self.stride, ::self.stride, ::self.stride]
-        else:
-            # Ensure the kernel size is valid
-            valid_kernel_size = [min(self.kernel_size, s) for s in padded_inp.size()[2:]]
-            filt = self.filt[:, :, :valid_kernel_size[0], :valid_kernel_size[1], :valid_kernel_size[2]]
-            return F.conv3d(pad_layer(inp), filt, stride=self.stride, groups=inp.shape[1])
-
-
-
-"""
 class Downsample(nn.Module):
     def __init__(self, channels, pad_type='reflect', filt_size=3, stride=2, pad_off=0):
         super(Downsample, self).__init__()
@@ -339,7 +288,7 @@ class Downsample(nn.Module):
                 return self.pad(inp)[:, :, ::self.stride, ::self.stride, ::self.stride]
         else:
             return F.conv3d(self.pad(inp), self.filt, stride=self.stride, groups=inp.shape[1])
-"""
+
 
 class Upsample2(nn.Module):
     def __init__(self, scale_factor, mode='nearest'):
@@ -373,7 +322,7 @@ class Upsample(nn.Module):
         else:
             return ret_val[:, :, :-1, :-1, :-1]
 
-"""
+
 def get_pad_layer(pad_type):
     if(pad_type in ['refl', 'reflect']):
         PadLayer = nn.ReflectionPad3d
@@ -384,19 +333,7 @@ def get_pad_layer(pad_type):
     else:
         print('Pad type [%s] not recognized' % pad_type)
     return PadLayer
-"""
 
-def get_pad_layer(pad_type):
-    if pad_type in ['refl', 'reflect']:
-        PadLayer = nn.ReflectionPad3d
-    elif pad_type in ['repl', 'replicate']:
-        PadLayer = nn.ReplicationPad3d
-    elif pad_type == 'zero':
-        PadLayer = nn.ZeroPad3d
-    else:
-        # Raise an informative error if an unrecognized padding type is passed
-        raise ValueError(f"Pad type '{pad_type}' is not recognized. Please use 'reflect', 'replicate', or 'zero'.")
-    return PadLayer
 
 class Identity(nn.Module):
     def forward(self, x):

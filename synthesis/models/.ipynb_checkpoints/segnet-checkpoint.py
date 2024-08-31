@@ -18,7 +18,6 @@ from torch import nn
 import torch
 import numpy as np
 import torch.nn.functional
-import torch.nn.functional as F
 
 
 
@@ -438,22 +437,6 @@ class UNet(nn.Module):
 
         for u in range(len(self.tu)):
             x = self.tu[u](x)
-            print(f'x size : {x.size()} , skips[-(u+1)] size:{skips[-(u + 1)].size()}')
-
-            if x.size(2) != skips[-(u + 1)].size(2):
-                if x.size(2) > skips[-(u + 1)].size(2):
-                    # If x's depth is larger, pad skips[-(u+1)]
-                    diff_depth = x.size(2) - skips[-(u + 1)].size(2)
-                    padding_depth = (diff_depth // 2, diff_depth - diff_depth // 2)
-                    skips[-(u + 1)] = F.pad(skips[-(u + 1)], (0, 0, 0, 0, padding_depth[0], padding_depth[1]))
-                else:
-                    # If skips[-(u+1)]'s depth is larger, pad x
-                    diff_depth = skips[-(u + 1)].size(2) - x.size(2)
-                    padding_depth = (diff_depth // 2, diff_depth - diff_depth // 2)
-                    x = F.pad(x, (0, 0, 0, 0, padding_depth[0], padding_depth[1]))
-                        
-            print(f'x size : {x.size()} , skips[-(u+1)] size:{skips[-(u + 1)].size()}')
-                
             x = torch.cat((x, skips[-(u + 1)]), dim=1)
             x = self.conv_blocks_localization[u](x)
             seg_outputs.append(self.final_nonlin(self.seg_outputs[u](x)))

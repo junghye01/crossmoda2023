@@ -25,7 +25,7 @@ class BaseOptions():
         # basic parameters
         parser.add_argument('-d', '--dataroot', type=str, default='./', help='path to images (should have subfolders ImagesA, ImagesB, LabelsA, EdgesA, etc)')
         parser.add_argument('-n', '--name', type=str, required=True, help='name of the experiment.')
-        parser.add_argument('--crop_size', default=(8,144,256), nargs=3, type=int, help='cropped patch size')
+        parser.add_argument('--crop_size', default=(256, 144, 8), nargs=3, type=int, help='cropped patch size')
         parser.add_argument('--segB', action='store_false', help='whether use the segmentation of fake B for training. Default: True')
 
         # default parameteres
@@ -37,7 +37,7 @@ class BaseOptions():
         parser.add_argument('--model', type=str, default='vandy365', help='chooses which model to use.')
         parser.add_argument('--input_nc', type=int, default=1, help='# of input image channels')
         parser.add_argument('--output_nc', type=int, default=1, help='# of output image channels')
-        parser.add_argument('--seg_output_nc', type=int, default=3, help='# of output channels for the segmentation task (4 for crossmoda2023)')
+        parser.add_argument('--seg_output_nc', type=int, default=4, help='# of output channels for the segmentation task (4 for crossmoda2023)')
         parser.add_argument('--ngf', type=int, default=64, help='# of gen filters in the last conv layer')
         parser.add_argument('--ndf', type=int, default=64, help='# of discrim filters in the first conv layer')
         parser.add_argument('--netD', type=str, default='basic', choices=['basic', 'n_layers', 'pixel', 'patch', 'tilestylegan2', 'stylegan2'], help='specify discriminator architecture. The basic model is a 70x70 PatchGAN. n_layers allows you to specify the layers in the discriminator')
@@ -56,7 +56,7 @@ class BaseOptions():
         parser.add_argument('--direction', type=str, default='AtoB', help='AtoB or BtoA')
         parser.add_argument('--serial_batches', action='store_true', help='if true, takes images in order to make batches, otherwise takes them randomly')
         parser.add_argument('--num_threads', default=4, type=int, help='# threads for loading data')
-        parser.add_argument('--batch_size', type=int, default=2, help='input batch size')
+        parser.add_argument('--batch_size', type=int, default=1, help='input batch size')
         parser.add_argument('--max_dataset_size', type=int, default=float("inf"), help='Maximum number of samples allowed per dataset. If the dataset directory contains more than max_dataset_size, only a subset is loaded.')
         parser.add_argument('--no_flip', action='store_true', help='if specified, do not flip the images for data augmentation')
         parser.add_argument('--display_winsize', type=int, default=256, help='display window size for both visdom and HTML')
